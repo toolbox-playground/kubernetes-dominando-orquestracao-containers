@@ -1,0 +1,25 @@
+# Vagrantfile to provision a Kubernetes cluster with 1 master and 2 worker nodes
+Vagrant.configure("2") do |config|
+  # Define the Kubernetes nodes
+  nodes = [
+    { name: "master", memory: 1024, cpus: 1, script: "setup_master.sh" },
+    { name: "worker1", memory: 1024, cpus: 1, script: "setup_worker.sh" },
+    { name: "worker2", memory: 1024, cpus: 1, script: "setup_worker.sh" }
+  ]
+
+  nodes.each do |node|
+    config.vm.define node[:name] do |vm|
+      vm.vm.box = "ubuntu/focal64" # Ubuntu 20.04 LTS
+      vm.vm.box_version = "20240821.0.1"
+      vm.vm.hostname = node[:name]
+      vm.vm.network "private_network", type: "dhcp"
+      vm.vm.provider "virtualbox" do |vb|
+        vb.memory = node[:memory]
+        vb.cpus = node[:cpus]
+      end
+      
+      # Provisioning script
+      vm.vm.provision "shell", path: "scripts/#{node[:script]}"
+    end
+  end
+end
