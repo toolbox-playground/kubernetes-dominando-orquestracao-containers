@@ -1,0 +1,23 @@
+{
+  "name": "k8s-exemplos-deployments",
+  "version": "1.1.1",
+  "description": "Repositório exemplo para uso didático. Aprendizado de Kubernetes",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "release": "commit-and-tag-version"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toolbox-playground/terraform-exemplo-basico-gcp.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/toolbox-playground/terraform-exemplo-basico-gcp/issues"
+  },
+  "homepage": "https://github.com/toolbox-playground/terraform-exemplo-basico-gcp#readme",
+  "dependencies": {
+    "commit-and-tag-version": "^12.4.1"
+  }
+}

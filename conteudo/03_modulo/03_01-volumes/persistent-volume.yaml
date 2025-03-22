@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: my-pv
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce  # The volume can be mounted as read-write by a single node
+  persistentVolumeReclaimPolicy: Retain  # Keeps the volume even if the claim is deleted
+  storageClassName: manual
+  hostPath:
+    path: "/mnt/data"  # The location on the node where the data will be stored
