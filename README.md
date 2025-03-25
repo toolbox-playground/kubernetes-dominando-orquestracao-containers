@@ -1,4 +1,4 @@
-![Kubernetes](imgs/logo_curso.jpg "Kubernetes - Dominando a Orquestração de Containers")
+![Kubernetes](imgs/logo_curso.png "Kubernetes - Dominando a Orquestração de Containers")
 
 # Kubernetes - Dominando a Orquestração de Containers
 
