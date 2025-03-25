@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: meu-servico-nodeport
+spec:
+  selector:
+    app: meu-app
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 9376
+    nodePort: 30080
+  type: NodePort
+

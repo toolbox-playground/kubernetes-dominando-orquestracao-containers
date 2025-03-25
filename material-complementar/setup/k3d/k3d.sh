@@ -13,7 +13,7 @@ create_cluster() {
     k3d cluster create k8s-lab \
         --servers 1 \
         --agents 2 \
-        --port 8080:80@loadbalancer
+        --port 8095:80@loadbalancer
     echo "Cluster created!"
     kubectl get nodes
 }
@@ -23,6 +23,7 @@ deploy_app() {
     echo "Deploying Hello World application..."
     kubectl apply -f hello-world-deployment.yaml
     kubectl apply -f hello-world-service.yaml
+    kubectl create configmap hello-world-app --from-file=app.py
     echo "Application deployed!"
 }
 
