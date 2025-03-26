@@ -1,10 +1,13 @@
 # Vagrantfile to provision a Kubernetes cluster with 1 master and 2 worker nodes
 Vagrant.configure("2") do |config|
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = "10096" # Adjust to your desired memory size (e.g., 4096MB for 4GB)
+  end
   # Define the Kubernetes nodes
   nodes = [
-    { name: "master", memory: 1024, cpus: 1, script: "setup_master.sh" },
-    { name: "worker1", memory: 1024, cpus: 1, script: "setup_worker.sh" },
-    { name: "worker2", memory: 1024, cpus: 1, script: "setup_worker.sh" }
+    { name: "master", memory: 2048, cpus: 2, script: "setup_master.sh", ip: "192.168.56.10" },
+    { name: "worker1", memory: 1024, cpus: 1, script: "setup_worker.sh", ip: "192.168.56.12"  },
+    { name: "worker2", memory: 1024, cpus: 1, script: "setup_worker.sh", ip: "192.168.56.11"  }
   ]
 
   nodes.each do |node|
