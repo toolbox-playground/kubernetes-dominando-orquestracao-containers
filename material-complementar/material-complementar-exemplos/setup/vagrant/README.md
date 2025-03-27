@@ -48,7 +48,7 @@ Após a instalação do Ubuntu Lite, você pode usar o Vagrant para gerenciar a 
 2. **Adicionar a Caixa ao Vagrant**
    - Agora, adicione a caixa `.box` criada ao Vagrant:
      ```bash
-         vagrant box add ubuntu-lite ./ubuntu-lite.box
+     vagrant box add ubuntu-lite ./ubuntu-lite.box
      ```
 
 ### Passo 5: Criar o Vagrantfile para Configurar a VM
@@ -59,33 +59,30 @@ Agora você pode criar o `Vagrantfile` para gerenciar a sua máquina virtual Ubu
    Na pasta onde você deseja armazenar a configuração do Vagrant, crie o arquivo `Vagrantfile` com o seguinte conteúdo:
 
    ```ruby
-      Vagrant.configure("2") do |config|
-        config.vm.provider "virtualbox" do |vb|
-          vb.memory = "10096" # Adjust to your desired memory size (e.g., 4096MB for 4GB)
-        end
-        # Define the Kubernetes nodes
-        nodes = [
-          { name: "master", memory: 2048, cpus: 2, script: "setup_master.sh", ip: "192.168.56.10" },
-          { name: "worker1", memory: 1024, cpus: 1, script: "setup_worker.sh", ip: "192.168.56.12"  },
-          { name: "worker2", memory: 1024, cpus: 1, script: "setup_worker.sh", ip: "192.168.56.11"  }
-        ]
+   Vagrant.configure("2") do |config|
+     config.vm.box = "ubuntu-lite"  # Nome da caixa que você criou
+     config.vm.network "private_network", type: "dhcp"
+     config.vm.provider "virtualbox" do |vb|
+       vb.memory = "2048"  # Ajuste a alocação de memória conforme necessário
+       vb.cpus = 2         # Ajuste a alocação de CPU conforme necessário
+     end
 
-        nodes.each do |node|
-          config.vm.define node[:name] do |vm|
-            vm.vm.box = "ubuntu/focal64" # Ubuntu 20.04 LTS
-            vm.vm.box_version = "20240821.0.1"
-            vm.vm.hostname = node[:name]
-            vm.vm.network "private_network", type: "dhcp"
-            vm.vm.provider "virtualbox" do |vb|
-              vb.memory = node[:memory]
-              vb.cpus = node[:cpus]
-            end
-            
-            # Provisioning script
-            vm.vm.provision "shell", path: "scripts/#{node[:script]}"
-          end
-        end
-      end
+     config.vm.provision "shell", inline: <<-SHELL
+       # Atualizar apt
+       sudo apt-get update -y
+       # Instalar dependências do Kubernetes
+       sudo apt-get install -y apt-transport-https ca-certificates curl
+       sudo curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+       sudo touch /etc/apt/sources.list.d/kubernetes.list
+       echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
+       sudo apt-get update -y
+       sudo apt-get install -y kubelet kubeadm kubectl
+       sudo apt-mark hold kubelet kubeadm kubectl
+       # Habilitar e iniciar kubelet
+       sudo systemctl enable kubelet
+       sudo systemctl start kubelet
+     SHELL
+   end
    ```
 
 ### Passo 6: Inicializar a Máquina Virtual com o Vagrant

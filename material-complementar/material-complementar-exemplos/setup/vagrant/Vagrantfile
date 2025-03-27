@@ -5,17 +5,17 @@ Vagrant.configure("2") do |config|
   end
   # Define the Kubernetes nodes
   nodes = [
-    { name: "master", memory: 2048, cpus: 2, script: "setup_master.sh", ip: "192.168.56.10" },
-    { name: "worker1", memory: 1024, cpus: 1, script: "setup_worker.sh", ip: "192.168.56.12"  },
-    { name: "worker2", memory: 1024, cpus: 1, script: "setup_worker.sh", ip: "192.168.56.11"  }
+    { name: "master", memory: 3072, cpus: 2, script: "setup_master.sh", ip: "192.168.56.10" },
+    { name: "worker1", memory: 2048, cpus: 2, script: "setup_worker.sh", ip: "192.168.56.12"  },
+    { name: "worker2", memory: 2048, cpus: 2, script: "setup_worker.sh", ip: "192.168.56.11"  }
   ]
-
+  
   nodes.each do |node|
     config.vm.define node[:name] do |vm|
       vm.vm.box = "ubuntu/focal64" # Ubuntu 20.04 LTS
       vm.vm.box_version = "20240821.0.1"
       vm.vm.hostname = node[:name]
-      vm.vm.network "private_network", type: "dhcp"
+      vm.vm.network "private_network", ip: node[:ip] # Usa IP fixo ao invés de DHCP
       vm.vm.provider "virtualbox" do |vb|
         vb.memory = node[:memory]
         vb.cpus = node[:cpus]
