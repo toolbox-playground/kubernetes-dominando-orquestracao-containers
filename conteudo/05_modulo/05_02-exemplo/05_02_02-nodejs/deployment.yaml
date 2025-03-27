@@ -15,7 +15,7 @@ spec:
       containers:
         - name: app-node
           image: local/node-api:latest
-          imagePullPolicy: Never  # Usa a imagem carregada localmente
+          imagePullPolicy: Never
           ports:
             - containerPort: 3000
 ---

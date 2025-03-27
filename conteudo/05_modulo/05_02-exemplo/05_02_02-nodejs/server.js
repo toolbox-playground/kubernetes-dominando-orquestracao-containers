@@ -19,7 +19,7 @@ function matrixMultiplication(size) {
 
 app.get('/test', (req, res) => {
     matrixMultiplication(300);
-    res.json({ message: "Matrix multiplication done!" });
+    res.json({ message: "Test!" });
 });
 
 app.get('/home', (req, res) => {
