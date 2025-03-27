@@ -14,31 +14,15 @@ spec:
     spec:
       containers:
         - name: app-node
-          image: thiagodev/nodejs-mysql-api:latest
+          image: local/node-api:latest
+          imagePullPolicy: Never  # Usa a imagem carregada localmente
           ports:
             - containerPort: 3000
-          env:
-            - name: DB_HOST
-              value: mysql
-            - name: DB_PORT
-              value: "3306"
-            - name: DB_NAME
-              value: appdb
-            - name: DB_USER
-              valueFrom:
-                secretKeyRef:
-                  name: mysql-secret
-                  key: username
-            - name: DB_PASS
-              valueFrom:
-                secretKeyRef:
-                  name: mysql-secret
-                  key: password
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: app-node
+  name: app-node-svc
 spec:
   type: NodePort
   selector:
@@ -46,4 +30,4 @@ spec:
   ports:
     - port: 3000
       targetPort: 3000
-      nodePort: 30003
+      nodePort: 30033

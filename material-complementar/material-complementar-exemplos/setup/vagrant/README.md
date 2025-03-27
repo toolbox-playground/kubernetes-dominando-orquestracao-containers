@@ -91,6 +91,9 @@ Após criar o `Vagrantfile`, você pode iniciar a máquina virtual com o comando
 
 ```bash
 vagrant up
+vagrant reload <nome-do-no> --provision
+vagrant halt
+vagrant destroy -f
 ```
 
 Esse comando iniciará a máquina virtual usando a caixa `ubuntu-lite` que você criou e provisionará a instalação do Kubernetes.

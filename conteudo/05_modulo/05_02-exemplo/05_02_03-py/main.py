@@ -1,36 +1,20 @@
-from flask import Flask, request, jsonify
-import mysql.connector
+from flask import Flask, jsonify
+import math
 
 app = Flask(__name__)
 
-# Configurações do banco de dados
-db_config = {
-    'user': 'seu_usuario',
-    'password': 'sua_senha',
-    'host': 'mysql',
-    'database': 'appdb'
-}
+def is_prime(n):
+    if n < 2:
+        return False
+    for i in range(2, int(math.sqrt(n)) + 1):
+        if n % i == 0:
+            return False
+    return True
 
-@app.route('/items', methods=['GET'])
-def get_items():
-    conn = mysql.connector.connect(**db_config)
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM items")
-    items = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return jsonify(items)
-
-@app.route('/items', methods=['POST'])
-def add_item():
-    new_item = request.json
-    conn = mysql.connector.connect(**db_config)
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO items (name) VALUES (%s)", (new_item['name'],))
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return '', 201
+@app.route('/test', methods=['GET'])
+def heavy_cpu_task():
+    primes = [x for x in range(10**6, 10**6 + 5000) if is_prime(x)]
+    return jsonify({"message": "Heavy computation done!", "primes_found": len(primes)})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

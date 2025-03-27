@@ -109,9 +109,21 @@ spec:
 EOF
 ```
 
+Caso tenha necessidade de importar uma imagem local:
+```
+kind load docker-image local/node-api:latest --name meu-cluster
+kind load docker-image local/java-api:latest --name meu-cluster
+kind load docker-image local/py-api:latest --name meu-cluster
+```
+
 ### Aplicar o deployment no cluster:
 ```bash
-kubectl apply -f app-deploy.yaml
+kubectl apply -f deployment.yaml
+```
+
+Faça o portfowarf:
+```
+kubectl port-forward svc/app-node-svc 30033:3000
 ```
 
 ### Verificar os pods em execução:

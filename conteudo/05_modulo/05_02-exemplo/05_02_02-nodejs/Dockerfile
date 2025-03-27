@@ -1,12 +1,7 @@
-FROM node:18
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm install
-
-COPY . .
-
+#FROM node:23-alpine
+FROM node:18.20-bullseye-slim
 EXPOSE 3000
-
-CMD ["npm", "start"]
+WORKDIR /app
+COPY server.js .
+RUN npm install express
+CMD ["node", "server.js"]
