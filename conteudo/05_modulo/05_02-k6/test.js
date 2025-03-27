@@ -19,5 +19,9 @@ export default function () {
     'resposta contém "Test!"': (r) => r.body.includes("Test!"),
   });
 
+  //let res = http.get('http://localhost:30003/test');
+
+
   sleep(1); // Espera 1 segundo antes da próxima iteração
 }
+

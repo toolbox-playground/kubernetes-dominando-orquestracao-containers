@@ -1,29 +1,24 @@
 const express = require('express');
 const app = express();
 
-function matrixMultiplication(size) {
-    let a = Array.from({ length: size }, () => Array(size).fill(1));
-    let b = Array.from({ length: size }, () => Array(size).fill(2));
-    let result = Array.from({ length: size }, () => Array(size).fill(0));
-
-    for (let i = 0; i < size; i++) {
-        for (let j = 0; j < size; j++) {
-            for (let k = 0; k < size; k++) {
-                result[i][j] += a[i][k] * b[k][j];
-            }
-        }
+// Simulating memory consumption
+function consumeMemory() {
+    let largeArray = [];
+    // Keep adding objects to the array to consume memory
+    for (let i = 0; i < 1e6; i++) {  // Adjust the number as needed
+        largeArray.push({ data: 'This is a large object to consume memory' });
     }
-    return result;
+    return largeArray;
 }
 
-
-app.get('/test', (req, res) => {
-    matrixMultiplication(300);
-    res.json({ message: "Test!" });
-});
-
 app.get('/home', (req, res) => {
+    // Consume memory before sending the response
+    consumeMemory();
+
+    // Send a response to the client
     res.json({ message: "Test!" });
 });
 
-app.listen(3000, () => console.log('Server running on port 3000'));
+app.listen(3000, () => {
+    console.log('Server is running on http://localhost:3000');
+});

@@ -119,11 +119,13 @@ kind load docker-image local/py-api:latest --name meu-cluster
 ### Aplicar o deployment no cluster:
 ```bash
 kubectl apply -f deployment.yaml
+kubectl apply -f metrics-server.yaml
 ```
 
-Faça o portfowarf:
+Teste as métricas
 ```
-kubectl port-forward svc/app-node-svc 30033:3000
+kubectl top nodes
+kubectl top pods
 ```
 
 ### Verificar os pods em execução:
