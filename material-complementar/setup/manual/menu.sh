@@ -769,8 +769,8 @@ while true; do
     10) deploy_nginx_with_loadbalancer;;
     #xx) validate_nginx_service ;;
 
-    11) install_ingress_controller
-    12) deploy_nginx_with_ingress
+    11) install_ingress_controller ;;
+    12) deploy_nginx_with_ingress ;;
 
     13) run_backup ;;
     14) run_restore ;;
