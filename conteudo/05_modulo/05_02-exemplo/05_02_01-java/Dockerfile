@@ -1,14 +1,24 @@
-# Usa uma imagem oficial do OpenJDK
-FROM openjdk:17
+# Use a valid Maven image with OpenJDK 17
+FROM maven:3.9.6-eclipse-temurin-17 AS build
+
 WORKDIR /app
 
-# Copia o código para dentro do contêiner
+# Copy the source code and POM
 COPY . .
 
-RUN mvn clean package
+# Build the application
+RUN mvn clean package -DskipTests
 
-# Comando para rodar a aplicação
-CMD ["java", "-jar", "app.jar"]
+# Use a minimal runtime JDK
+FROM openjdk:17-jdk-slim
 
-# Expõe a porta do serviço
+WORKDIR /app
+
+# Copy the built JAR file
+COPY --from=build /app/target/*.jar app.jar
+
+# Expose the application port
 EXPOSE 8080
+
+# Run the application
+CMD ["java", "-jar", "app.jar"]

@@ -1,43 +1,55 @@
-package com.example.heavyapi;
+package com.example.memoryconsume;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import java.util.Random;
+import java.util.ArrayList;
+import java.util.List;
 
 @SpringBootApplication
-public class Application {
+public class MemoryConsumeApplication {
+
     public static void main(String[] args) {
-        SpringApplication.run(Application.class, args);
+        SpringApplication.run(MemoryConsumeApplication.class, args);
     }
 }
 
 @RestController
-@RequestMapping("/test")
-class HeavyTaskController {
+class MemoryConsumeController {
 
-    @GetMapping
-    public String performHeavyTask() {
-        int[][] matrix = new int[500][500];
-        Random random = new Random();
-
-        // Preenchendo a matriz com valores aleatórios
-        for (int i = 0; i < 500; i++) {
-            for (int j = 0; j < 500; j++) {
-                matrix[i][j] = random.nextInt(1000);
-            }
+    // Simulating memory consumption
+    public List<Object> consumeMemory() {
+        List<Object> largeList = new ArrayList<>();
+        // Keep adding objects to the list to consume memory
+        for (int i = 0; i < 1000000; i++) {  // Adjust the number as needed
+            largeList.add(new MemoryObject("This is a large object to consume memory"));
         }
+        return largeList;
+    }
 
-        // Realizando cálculos pesados na matriz
-        long sum = 0;
-        for (int i = 0; i < 500; i++) {
-            for (int j = 0; j < 500; j++) {
-                sum += Math.sqrt(matrix[i][j]);
-            }
-        }
+    @GetMapping("/home")
+    public String home() {
+        // Consume memory before sending the response
+        consumeMemory();
+        
+        // Send a response to the client
+        return "{\"message\": \"Test!\"}";
+    }
+}
 
-        return "Heavy computation done! Sum: " + sum;
+class MemoryObject {
+    private String data;
+
+    public MemoryObject(String data) {
+        this.data = data;
+    }
+
+    public String getData() {
+        return data;
+    }
+
+    public void setData(String data) {
+        this.data = data;
     }
 }
