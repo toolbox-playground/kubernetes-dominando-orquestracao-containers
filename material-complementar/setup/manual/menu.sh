@@ -228,6 +228,35 @@ function upgrade_k8s_cluster() {
   echo "[✔] Cluster atualizado para $FULL_VERSION com sucesso!"
 }
 
+run_backup() {
+  echo "[+] Fazendo backup dos manifests e configs do cluster..."
+  BACKUP_DIR="$HOME/k8s-backup-$(date +%Y%m%d-%H%M%S)"
+  mkdir -p "$BACKUP_DIR"
+
+  echo "[+] Exportando todos os objetos do cluster..."
+  kubectl get all --all-namespaces -o yaml > "$BACKUP_DIR/all-resources.yaml"
+
+  echo "[+] Salvando ConfigMap e Secrets..."
+  kubectl get configmaps --all-namespaces -o yaml > "$BACKUP_DIR/configmaps.yaml"
+  kubectl get secrets --all-namespaces -o yaml > "$BACKUP_DIR/secrets.yaml"
+
+  echo "[+] Backup salvo em: $BACKUP_DIR"
+}
+
+run_restore() {
+  read -p "Digite o caminho completo do diretório de backup: " RESTORE_DIR
+  if [[ ! -d "$RESTORE_DIR" ]]; then
+    echo "[!] Diretório de backup não encontrado: $RESTORE_DIR"
+    return
+  fi
+
+  echo "[+] Restaurando recursos do backup..."
+  kubectl apply -f "$RESTORE_DIR/all-resources.yaml"
+  kubectl apply -f "$RESTORE_DIR/configmaps.yaml"
+  kubectl apply -f "$RESTORE_DIR/secrets.yaml"
+  echo "[✔] Restauração concluída com sucesso."
+}
+
 # Menu
 clear
 while true; do
@@ -242,7 +271,9 @@ while true; do
   echo "7) Permitir que o control-plane aceite PODs"
   echo "8) Validar funcionamento do NGINX"
   echo "9) Atualizar cluster Kubernetes"
-  echo "10) Sair"
+  echo "10) Fazer backup do cluster"
+  echo "11) Fazer restore do cluster"
+  echo "0) Sair"
   read -p "Escolha uma opção: " CHOICE
 
   case $CHOICE in
@@ -255,7 +286,9 @@ while true; do
     7) allow_pods_on_control_plane ;;
     8) validate_nginx_service ;;
     9) upgrade_k8s_cluster ;;
-    10) echo "Saindo..."; exit 0 ;;
+    10) run_backup ;;
+    11) run_restore ;;
+    0) echo "Saindo..."; exit 0 ;;
     *) echo "Opção inválida!" ;;
   esac
 
