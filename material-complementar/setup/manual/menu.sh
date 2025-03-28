@@ -524,6 +524,206 @@ EOF
   echo ""
 }
 
+function install_ingress_controller() {
+  echo "=============================="
+  echo "Instalando NGINX Ingress Controller"
+  echo "=============================="
+
+  echo "[+] Aplicando manifest do ingress-nginx..."
+  kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.9.5/deploy/static/provider/cloud/deploy.yaml
+
+  echo "[+] Aguardando o ingress-nginx controller estar pronto..."
+  kubectl wait --namespace ingress-nginx \
+    --for=condition=Ready pod \
+    --selector=app.kubernetes.io/component=controller \
+    --timeout=180s
+
+  echo "[✔] Ingress Controller instalado com sucesso!"
+}
+
+function deploy_nginx_with_ingress() {
+  echo "=============================="
+  echo "Deploy NGINX + Ingress"
+  echo "=============================="
+
+  echo "[+] Criando index.html personalizado..."
+  cat <<EOF > custom-index.html
+<html>
+  <head><title>NGINX via Ingress</title></head>
+  <body>
+    <h1>Você acessou esse NGINX via Ingress Controller!</h1>
+  </body>
+</html>
+EOF
+
+  echo "[+] Criando ConfigMap com index.html..."
+  kubectl create configmap nginx-index --from-file=index.html=custom-index.html --dry-run=client -o yaml | kubectl apply -f -
+
+  echo "[+] Criando Deployment..."
+  cat <<EOF | kubectl apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-ingress-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-ingress
+  template:
+    metadata:
+      labels:
+        app: nginx-ingress
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        volumeMounts:
+        - name: html
+          mountPath: /usr/share/nginx/html/index.html
+          subPath: index.html
+        ports:
+        - containerPort: 80
+      volumes:
+      - name: html
+        configMap:
+          name: nginx-index
+EOF
+
+  echo "[+] Criando Service ClusterIP..."
+  kubectl expose deployment nginx-ingress-demo --port=80 --name=nginx-ingress-svc
+
+  echo "[+] Criando Ingress..."
+  cat <<EOF | kubectl apply -f -
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx-demo-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-ingress-svc
+            port:
+              number: 80
+EOF
+
+  echo "[+] Buscando IP da máquina atual (externo)..."
+  EXTERNAL_IP=$(curl -s http://checkip.amazonaws.com)
+  echo ""
+  echo "[✔] Tudo pronto!"
+  echo "    Acesse em: http://$EXTERNAL_IP"
+  echo "    Ou use:   curl http://$EXTERNAL_IP"
+  echo ""
+}
+
+function install_ingress_controller() {
+  echo "=============================="
+  echo "Instalando NGINX Ingress Controller"
+  echo "=============================="
+
+  echo "[+] Aplicando manifest do ingress-nginx..."
+  kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.9.5/deploy/static/provider/cloud/deploy.yaml
+
+  echo "[+] Aguardando o ingress-nginx controller estar pronto..."
+  kubectl wait --namespace ingress-nginx \
+    --for=condition=Ready pod \
+    --selector=app.kubernetes.io/component=controller \
+    --timeout=180s
+
+  echo "[✔] Ingress Controller instalado com sucesso!"
+}
+
+function deploy_nginx_with_ingress() {
+  echo "=============================="
+  echo "Deploy NGINX + Ingress"
+  echo "=============================="
+
+  echo "[+] Criando index.html personalizado..."
+  cat <<EOF > custom-index.html
+<html>
+  <head><title>NGINX via Ingress</title></head>
+  <body>
+    <h1>Você acessou esse NGINX via Ingress Controller!</h1>
+  </body>
+</html>
+EOF
+
+  echo "[+] Criando ConfigMap com index.html..."
+  kubectl create configmap nginx-index --from-file=index.html=custom-index.html --dry-run=client -o yaml | kubectl apply -f -
+
+  echo "[+] Criando Deployment..."
+  cat <<EOF | kubectl apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-ingress-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-ingress
+  template:
+    metadata:
+      labels:
+        app: nginx-ingress
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        volumeMounts:
+        - name: html
+          mountPath: /usr/share/nginx/html/index.html
+          subPath: index.html
+        ports:
+        - containerPort: 80
+      volumes:
+      - name: html
+        configMap:
+          name: nginx-index
+EOF
+
+  echo "[+] Criando Service ClusterIP..."
+  kubectl expose deployment nginx-ingress-demo --port=80 --name=nginx-ingress-svc
+
+  echo "[+] Criando Ingress..."
+  cat <<EOF | kubectl apply -f -
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx-demo-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-ingress-svc
+            port:
+              number: 80
+EOF
+
+  echo "[+] Buscando IP da máquina atual (externo)..."
+  EXTERNAL_IP=$(curl -s http://checkip.amazonaws.com)
+  echo ""
+  echo "[✔] Tudo pronto!"
+  echo "    Acesse em: http://$EXTERNAL_IP"
+  echo "    Ou use:   curl http://$EXTERNAL_IP"
+  echo ""
+}
+
 # Menu
 clear
 while true; do
@@ -539,14 +739,18 @@ while true; do
   echo "7) Deployar NGINX com ClusterIP service"
   echo "8) Criar Port-Forward para NGINX ClusterIP"
   echo "9) Deployar NGINX com Volume e service"
+  echo "10) Deployar NGINX com LoadBalancer"
 
   #echo "10) Validar funcionamento do NGINX"
-  
-  echo "11) Fazer backup do cluster"
-  echo "12) Fazer restore do cluster"
 
-  echo "13) Gerar Kubeadm token"
-  echo "14) Troubleshooting"
+  echo "11) Instalar Ingress Controller"
+  echo "12) Deployar NGINX com Ingress"
+  
+  echo "13) Fazer backup do cluster"
+  echo "14) Fazer restore do cluster"
+
+  echo "15) Gerar Kubeadm token"
+  echo "16) Troubleshooting"
 
   echo "0) Sair"
   read -p "Escolha uma opção: " CHOICE
@@ -565,11 +769,14 @@ while true; do
     10) deploy_nginx_with_loadbalancer;;
     #xx) validate_nginx_service ;;
 
-    11) run_backup ;;
-    12) run_restore ;;
+    11) install_ingress_controller
+    12) deploy_nginx_with_ingress
 
-    13) generate_kubeadm_token ;;
-    14) troubleshooting ;;
+    13) run_backup ;;
+    14) run_restore ;;
+
+    15) generate_kubeadm_token ;;
+    16) troubleshooting ;;
 
     0) echo "Saindo..."; exit 0 ;;
     *) echo "Opção inválida!" ;;
