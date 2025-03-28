@@ -257,6 +257,73 @@ run_restore() {
   echo "[✔] Restauração concluída com sucesso."
 }
 
+deploy_nginx_with_volume() {
+  echo "[+] Criando ConfigMap com o index.html..."
+  cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-index
+data:
+  index.html: |
+    <html>
+    <head><title>Bem-vindo ao NGINX via Volume!</title></head>
+    <body>
+      <h1>Deploy feito com sucesso usando volume!</h1>
+    </body>
+    </html>
+EOF
+
+  echo "[+] Criando Deployment do NGINX com volume montado..."
+  cat <<EOF | kubectl apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-volume-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-volume
+  template:
+    metadata:
+      labels:
+        app: nginx-volume
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: html-volume
+          mountPath: /usr/share/nginx/html/index.html
+          subPath: index.html
+      volumes:
+      - name: html-volume
+        configMap:
+          name: nginx-index
+EOF
+
+  echo "[+] Expondo o Deployment como Service NodePort..."
+  kubectl expose deployment nginx-volume-deploy --type=NodePort --port=80
+
+  echo "[+] Aguardando Service ficar disponível..."
+  sleep 5
+
+  NODE_PORT=$(kubectl get svc nginx-volume-deploy -o jsonpath="{.spec.ports[0].nodePort}")
+  NODE_IP=$(kubectl get nodes -o jsonpath="{.items[0].status.addresses[?(@.type=='InternalIP')].address}")
+
+  echo ""
+  echo "[✔] Tudo pronto! Para testar o acesso, use o comando:"
+  echo "curl http://$NODE_IP:$NODE_PORT"
+}
+
+generate_kubeadm_token() {
+  echo "[✔] Gerando token para ser usado no worker:"
+  kubeadm token create --print-join-command
+}
+
 # Menu
 clear
 while true; do
@@ -273,6 +340,8 @@ while true; do
   echo "9) Atualizar cluster Kubernetes"
   echo "10) Fazer backup do cluster"
   echo "11) Fazer restore do cluster"
+  echo "12) Deployar NGINX com Volume"
+  echo "13) Gerar Kubeadm token"
   echo "0) Sair"
   read -p "Escolha uma opção: " CHOICE
 
@@ -288,6 +357,8 @@ while true; do
     9) upgrade_k8s_cluster ;;
     10) run_backup ;;
     11) run_restore ;;
+    12) deploy_nginx_with_volume ;;
+    13) generate_kubeadm_token ;;
     0) echo "Saindo..."; exit 0 ;;
     *) echo "Opção inválida!" ;;
   esac
