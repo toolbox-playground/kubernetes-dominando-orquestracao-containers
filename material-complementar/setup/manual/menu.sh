@@ -162,7 +162,7 @@ EOF
 function expose_nginx_nodeport() {
   kubectl expose deployment nginx-deploy-configmap --type=NodePort --port=80 || true
   kubectl get svc nginx-deploy-configmap
-  NODE_PORT=$(kubectl get svc nnginx-deploy-configmap -o jsonpath='{.spec.ports[0].nodePort}')
+  NODE_PORT=$(kubectl get svc nginx-deploy-configmap -o jsonpath='{.spec.ports[0].nodePort}')
   NODE_IP=$(hostname -I | awk '{print $1}')
   echo "[✔] Service exposed on NodePort."
   echo "Use the following command to test: curl http://$NODE_IP:$NODE_PORT"
