@@ -17,10 +17,6 @@ curl -fsSL "https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key" \
 
 echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /" \
     | sudo tee /etc/apt/sources.list.d/kubernetes.list > /dev/null
-
-sudo apt update
-
-sudo apt install -y kubeadm="1.32*"
 ```
 
 ## 1. 📦 Desbloquear e atualizar o kubeadm
