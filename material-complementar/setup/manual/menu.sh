@@ -130,7 +130,7 @@ function deploy_deployment() {
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-deploy
+  name: nginx-deploy-configmap
 spec:
   replicas: 1
   selector:
@@ -155,14 +155,14 @@ spec:
           name: nginx-html
 EOF
 
-  kubectl create configmap nginx-html --from-literal=index.html="<h1>Oi xuxu!</h1>"
+  kubectl create configmap nginx-html --from-literal=index.html="<h1>Oi NGINX e ConfigMap!</h1>"
   echo "[✔] Deployment created."
 }
 
 function expose_nginx_nodeport() {
-  kubectl expose deployment nginx-deploy --type=NodePort --port=80 || true
-  kubectl get svc nginx-deploy
-  NODE_PORT=$(kubectl get svc nginx-deploy -o jsonpath='{.spec.ports[0].nodePort}')
+  kubectl expose deployment nginx-deploy-configmap --type=NodePort --port=80 || true
+  kubectl get svc nginx-deploy-configmap
+  NODE_PORT=$(kubectl get svc nnginx-deploy-configmap -o jsonpath='{.spec.ports[0].nodePort}')
   NODE_IP=$(hostname -I | awk '{print $1}')
   echo "[✔] Service exposed on NodePort."
   echo "Use the following command to test: curl http://$NODE_IP:$NODE_PORT"
@@ -170,15 +170,28 @@ function expose_nginx_nodeport() {
 
 function port_forward() {
   echo "[+] Forwarding port 8080 to nginx Service..."
-  kubectl port-forward svc/nginx-deploy 8080:80
+  kubectl port-forward svc/nginx-clusterip 8080:80
 }
 
 function troubleshooting() {
   echo "[+] Gathering cluster troubleshooting info..."
+
+  echo "[+] Verifing nodes"
   kubectl get nodes -o wide
-  kubectl get pods -A
+
+  echo "[+] Describing nodes"
   kubectl describe nodes
-  kubectl get events --sort-by=.metadata.creationTimestamp | tail -n 20
+
+  echo "[+] Verifing all PODs"
+  kubectl get pods -A
+  
+  echo "[+] Getting last 30 events"
+  kubectl get events --sort-by=.metadata.creationTimestamp | tail -n 30
+
+  echo "[+] Checking podCIDR IPs..."
+  kubectl get node $(hostname) -o jsonpath="{.spec.podCIDR}"
+
+
   echo "[✔] Troubleshooting complete."
 }
 
@@ -203,9 +216,25 @@ function upgrade_k8s_cluster() {
 
   read -p "Digite a nova versão do Kubernetes (ex: 1.32): " NEW_VERSION
 
+  echo "[+] Limpando repositórios antigos..."
+  sudo rm -f /etc/apt/sources.list.d/kubernetes.list
+  sudo rm -f /etc/apt/sources.list.d/archive_uri-http_apt_kubernetes_io-*.list
+  sudo rm -f /etc/apt/trusted.gpg.d/kubernetes-archive-keyring.gpg
+  sudo rm -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+  echo "[+] Configurando repositório APT para o Kubernetes v$NEW_VERSION..."
+  sudo mkdir -p -m 755 /etc/apt/keyrings
+
+  curl -fsSL "https://pkgs.k8s.io/core:/stable:/v${NEW_VERSION}/deb/Release.key" \
+    | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+  echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v${NEW_VERSION}/deb/ /" \
+    | sudo tee /etc/apt/sources.list.d/kubernetes.list > /dev/null
+
+  sudo apt-get update
+
   echo "[+] Atualizando kubeadm para a versão $NEW_VERSION..."
   sudo apt-mark unhold kubeadm
-  sudo apt-get update
   sudo apt-get install -y --allow-change-held-packages kubeadm="${NEW_VERSION}*"
   sudo apt-mark hold kubeadm
 
@@ -257,61 +286,81 @@ run_restore() {
   echo "[✔] Restauração concluída com sucesso."
 }
 
-deploy_nginx_with_volume() {
-  echo "[+] Criando ConfigMap com o index.html..."
+deploy_nginx_with_pv() {
+  echo "[+] Criando PersistentVolume e PersistentVolumeClaim..."
+
   cat <<EOF | kubectl apply -f -
 apiVersion: v1
-kind: ConfigMap
+kind: PersistentVolume
 metadata:
-  name: nginx-index
-data:
-  index.html: |
-    <html>
-    <head><title>Bem-vindo ao NGINX via Volume!</title></head>
-    <body>
-      <h1>Deploy feito com sucesso usando volume!</h1>
-    </body>
-    </html>
+  name: nginx-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /tmp/nginx-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nginx-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
 EOF
 
-  echo "[+] Criando Deployment do NGINX com volume montado..."
+  echo "[+] Criando Deployment com PV/PVC e initContainer para copiar index.html..."
+
   cat <<EOF | kubectl apply -f -
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-volume-deploy
+  name: nginx-pv-deploy
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: nginx-volume
+      app: nginx-pv
   template:
     metadata:
       labels:
-        app: nginx-volume
+        app: nginx-pv
     spec:
-      containers:
-      - name: nginx
-        image: nginx
-        ports:
-        - containerPort: 80
-        volumeMounts:
-        - name: html-volume
-          mountPath: /usr/share/nginx/html/index.html
-          subPath: index.html
       volumes:
-      - name: html-volume
-        configMap:
-          name: nginx-index
+        - name: nginx-storage
+          persistentVolumeClaim:
+            claimName: nginx-pvc
+      initContainers:
+        - name: init-index
+          image: busybox
+          command: ["/bin/sh", "-c"]
+          args:
+            - echo "<h1>NGINX com volume persistente!</h1>" > /data/index.html;
+          volumeMounts:
+            - name: nginx-storage
+              mountPath: /data
+      containers:
+        - name: nginx
+          image: nginx
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: nginx-storage
+              mountPath: /usr/share/nginx/html
 EOF
 
-  echo "[+] Expondo o Deployment como Service NodePort..."
-  kubectl expose deployment nginx-volume-deploy --type=NodePort --port=80
+  echo "[+] Expondo o Deployment como NodePort..."
+  kubectl expose deployment nginx-pv-deploy --type=NodePort --port=80
 
   echo "[+] Aguardando Service ficar disponível..."
   sleep 5
 
-  NODE_PORT=$(kubectl get svc nginx-volume-deploy -o jsonpath="{.spec.ports[0].nodePort}")
+  NODE_PORT=$(kubectl get svc nginx-pv-deploy -o jsonpath="{.spec.ports[0].nodePort}")
   NODE_IP=$(kubectl get nodes -o jsonpath="{.items[0].status.addresses[?(@.type=='InternalIP')].address}")
 
   echo ""
@@ -324,41 +373,116 @@ generate_kubeadm_token() {
   kubeadm token create --print-join-command
 }
 
+function deploy_nginx_clusterip() {
+  echo "[+] Criando ConfigMap com index.html customizado..."
+  cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-clusterip
+data:
+  index.html: |
+    <html>
+      <head><title>ClusterIP Example</title></head>
+      <body>
+        <h1>Você está acessando via ClusterIP + Port-Forward!</h1>
+        <p>Feito com Kubernetes 💙</p>
+      </body>
+    </html>
+EOF
+
+  echo "[+] Criando Deployment do NGINX..."
+  cat <<EOF | kubectl apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-clusterip
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-clusterip
+  template:
+    metadata:
+      labels:
+        app: nginx-clusterip
+    spec:
+      containers:
+      - name: nginx-clusterip
+        image: nginx:stable
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: html-volume
+          mountPath: /usr/share/nginx/html/index.html
+          subPath: index.html
+      volumes:
+      - name: html-volume
+        configMap:
+          name: nginx-clusterip
+EOF
+
+  echo "[+] Criando Service tipo ClusterIP..."
+  kubectl expose deployment nginx-clusterip --type=ClusterIP --port=80
+
+  echo "[+] Esperando o pod do nginx ficar pronto..."
+  kubectl wait --for=condition=ready pod -l app=nginx --timeout=60s
+
+  echo "[+] Iniciando port-forward na porta 8080 -> nginx:80 ..."
+  echo "[✔] Agora execute o seguinte comando para testar:"
+  echo ""
+  echo "    curl http://localhost:8080"
+  echo ""
+
+  kubectl port-forward svc/nginx-clusterip 8080:80
+}
+
 # Menu
 clear
 while true; do
   echo ""
   echo "O que você quer fazer?"
   echo "1) Instalar o Kubernetes"
-  echo "2) Desinstalar o Kubernetes"
-  echo "3) Deployar Deployment (NGINX)"
-  echo "4) Deployar NodePort Service (NGINX)"
-  echo "5) Port-Forward para NGINX"
-  echo "6) Troubleshooting"
-  echo "7) Permitir que o control-plane aceite PODs"
-  echo "8) Validar funcionamento do NGINX"
-  echo "9) Atualizar cluster Kubernetes"
-  echo "10) Fazer backup do cluster"
-  echo "11) Fazer restore do cluster"
-  echo "12) Deployar NGINX com Volume"
+  echo "2) Atualizar cluster Kubernetes"
+  echo "3) Desinstalar o Kubernetes"
+  echo "4) Permitir que o control-plane aceite PODs"
+
+  echo "5) Deployar NGINX sem service"
+  echo "6) Deployar NodePort Service para o NGINX"
+  echo "7) Deployar NGINX com ClusterIP service"
+  echo "8) Criar Port-Forward para NGINX ClusterIP"
+  echo "9) Deployar NGINX com Volume e service"
+
+  #echo "10) Validar funcionamento do NGINX"
+  
+  echo "11) Fazer backup do cluster"
+  echo "12) Fazer restore do cluster"
+
   echo "13) Gerar Kubeadm token"
+  echo "14) Troubleshooting"
+
   echo "0) Sair"
   read -p "Escolha uma opção: " CHOICE
 
   case $CHOICE in
     1) install_kubernetes;;
-    2) uninstall_kubernetes;;
-    3) deploy_deployment;;
-    4) expose_nginx_nodeport;;
-    5) port_forward;;
-    6) troubleshooting;;
-    7) allow_pods_on_control_plane ;;
-    8) validate_nginx_service ;;
-    9) upgrade_k8s_cluster ;;
-    10) run_backup ;;
-    11) run_restore ;;
-    12) deploy_nginx_with_volume ;;
+    2) upgrade_k8s_cluster ;;
+    3) uninstall_kubernetes;;
+    4) allow_pods_on_control_plane ;;
+    
+    5) deploy_deployment;;
+    6) expose_nginx_nodeport;;
+    7) deploy_nginx_clusterip ;;
+    8) port_forward;;
+    9) deploy_nginx_with_pv ;;
+    #10) validate_nginx_service ;;
+
+    11) run_backup ;;
+    12) run_restore ;;
+
     13) generate_kubeadm_token ;;
+    14) troubleshooting;;
+
     0) echo "Saindo..."; exit 0 ;;
     *) echo "Opção inválida!" ;;
   esac
