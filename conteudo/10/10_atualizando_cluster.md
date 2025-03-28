@@ -20,7 +20,7 @@ echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.
 
 sudo apt update
 
-sudo apt install -y kubelet="1.32*" kubeadm="1.32*" kubectl="1.32*"
+sudo apt install -y kubeadm="1.32*"
 ```
 
 ## 1. 📦 Desbloquear e atualizar o kubeadm
