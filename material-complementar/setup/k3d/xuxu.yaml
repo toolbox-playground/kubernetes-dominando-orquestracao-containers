@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: shubs-ng
+  name: shubs-ng
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      app: shubs-ng
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: shubs-ng
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        resources: {}
+status: {}

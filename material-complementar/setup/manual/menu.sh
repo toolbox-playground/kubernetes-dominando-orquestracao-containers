@@ -72,7 +72,7 @@ EOF
   sudo apt update
 
   echo "[+] Installing kubeadm, kubelet, kubectl version $K8S_VERSION..."
-  sudo apt install -y kubelet="${K8S_VERSION}*" kubeadm="${K8S_VERSION}*" kubectl="${K8S_VERSION}*"
+  sudo apt install -y --allow-downgrades --allow-change-held-packages kubelet="${K8S_VERSION}*" kubeadm="${K8S_VERSION}*" kubectl="${K8S_VERSION}*"
 
   sudo apt-mark hold kubelet kubeadm kubectl
   sudo systemctl enable --now kubelet
