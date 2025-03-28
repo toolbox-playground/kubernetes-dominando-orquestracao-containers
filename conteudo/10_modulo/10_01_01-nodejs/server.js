@@ -14,7 +14,7 @@ function consumeMemory() {
 app.get('/home', (req, res) => {
     // Send a response to the client
     console.log(`Opa, cheguei na request ${process.env.SERVER}`);
-    res.json({ message: "Test!" });
+    res.json({ message: `Test! Estou no serviço ${process.env.SERVER}` });
 });
 
 

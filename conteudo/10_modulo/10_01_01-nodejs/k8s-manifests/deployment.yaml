@@ -1,0 +1,67 @@
+# Stable deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-node-v1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: app-node
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: app-node
+        version: v1
+    spec:
+      containers:
+        - name: app-node
+          image: node-api:1.0.0
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 3000
+          env:
+            - name: SERVER
+              value: "RELEASE"
+          resources:
+            requests:
+              memory: "500Mi"
+              cpu: "250m"
+            limits:
+              memory: "900Mi"
+              cpu: "500m"
+---
+# Canary deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-node-v2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app-node
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: app-node
+        version: v2
+    spec:
+      containers:
+        - name: app-node
+          image: node-api:1.0.1
+          imagePullPolicy: Never
+          env:
+            - name: SERVER
+              value: "CANARY-DEPLOY"
+          ports:
+            - containerPort: 3000
+          resources:
+            requests:
+              memory: "500Mi"
+              cpu: "250m"
+            limits:
+              memory: "900Mi"
+              cpu: "500m"

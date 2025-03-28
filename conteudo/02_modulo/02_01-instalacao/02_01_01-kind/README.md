@@ -66,7 +66,7 @@ EOF
 ou
 
 ```bash
-kind create cluster --config kind-cluster.yaml --name meu-cluster
+kind create cluster --config kind-config.yaml --name meu-cluster
 ```
 
 Aguarde a criação do cluster.
@@ -111,9 +111,9 @@ EOF
 
 Caso tenha necessidade de importar uma imagem local:
 ```
-kind load docker-image local/node-api:latest --name meu-cluster
-kind load docker-image local/java-api:latest --name meu-cluster
-kind load docker-image local/py-api:latest --name meu-cluster
+kind load docker-image node-api:latest --name meu-cluster
+kind load docker-image java-api:latest --name meu-cluster
+kind load docker-image py-api:latest --name meu-cluster
 ```
 
 ### Aplicar o deployment no cluster:
