@@ -437,6 +437,93 @@ EOF
   kubectl port-forward svc/nginx-clusterip 8080:80
 }
 
+function deploy_nginx_with_loadbalancer() {
+  echo "=============================="
+  echo "Deploy do NGINX com LoadBalancer"
+  echo "=============================="
+
+  echo "[+] Criando arquivo index.html personalizado..."
+  cat <<EOF > custom-index.html
+<html>
+  <head><title>NGINX via LoadBalancer</title></head>
+  <body>
+    <h1>Você acessou esse NGINX via LoadBalancer!</h1>
+  </body>
+</html>
+EOF
+
+  echo "[+] Criando ConfigMap com o conteúdo do index.html..."
+  kubectl create configmap nginx-index-html --from-file=index.html=custom-index.html --dry-run=client -o yaml | kubectl apply -f -
+
+  echo "[+] Criando Deployment com volume baseado em ConfigMap..."
+  cat <<EOF | kubectl apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-lb-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-lb
+  template:
+    metadata:
+      labels:
+        app: nginx-lb
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: html-volume
+          mountPath: /usr/share/nginx/html/index.html
+          subPath: index.html
+      volumes:
+      - name: html-volume
+        configMap:
+          name: nginx-index-html
+EOF
+
+  echo "[+] Criando Service tipo LoadBalancer..."
+  cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-lb-service
+spec:
+  selector:
+    app: nginx-lb
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: LoadBalancer
+EOF
+
+  echo "[+] Aguardando IP externo ser provisionado..."
+  sleep 5
+  while true; do
+    EXTERNAL_IP=$(kubectl get svc nginx-lb-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+    if [[ -z "$EXTERNAL_IP" ]]; then
+      EXTERNAL_IP=$(kubectl get svc nginx-lb-service -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+    fi
+    if [[ -n "$EXTERNAL_IP" ]]; then
+      break
+    fi
+    echo "   - Ainda aguardando IP externo... tentando novamente em 5 segundos."
+    sleep 5
+  done
+
+  echo ""
+  echo "[✔] Deploy concluído com sucesso!"
+  echo "[✔] Execute o comando abaixo para testar o acesso:"
+  echo ""
+  echo "    curl http://$EXTERNAL_IP"
+  echo ""
+}
+
 # Menu
 clear
 while true; do
@@ -475,13 +562,14 @@ while true; do
     7) deploy_nginx_clusterip ;;
     8) port_forward;;
     9) deploy_nginx_with_pv ;;
-    #10) validate_nginx_service ;;
+    10) deploy_nginx_with_loadbalancer;;
+    #xx) validate_nginx_service ;;
 
     11) run_backup ;;
     12) run_restore ;;
 
     13) generate_kubeadm_token ;;
-    14) troubleshooting;;
+    14) troubleshooting ;;
 
     0) echo "Saindo..."; exit 0 ;;
     *) echo "Opção inválida!" ;;
