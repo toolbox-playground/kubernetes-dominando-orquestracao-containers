@@ -169,4 +169,3 @@ O Kubernetes criará um balanceador de carga externo e você verá o IP atribuí
 1. **ClusterIP**: Exposto apenas dentro do cluster.
 2. **NodePort**: Exposto externamente por meio de um IP de nó e uma porta configurada.
 3. **LoadBalancer**: Exposto externamente com um balanceador de carga atribuído automaticamente.
-

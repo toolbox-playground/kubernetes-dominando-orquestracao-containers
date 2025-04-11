@@ -5,12 +5,14 @@ Se quiser um ambiente mais próximo do real, pode usar o `kubeadm` para criar um
 ## 1. Provisionamento das VMs
 
 Crie 3 VMs com Ubuntu 22.04:
+
 - 1 nó master
 - 2 nós workers
 
 ## 2. Instalação de Dependências (em todas as VMs)
 
 Execute os seguintes comandos em **todas as VMs**:
+
 ```bash
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y apt-transport-https curl
@@ -32,6 +34,7 @@ sudo systemctl enable crio
 ## 4. Criando o Cluster no Nó Master
 
 No nó master, execute:
+
 ```bash
 sudo kubeadm init
 ```
@@ -47,6 +50,7 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 ## 6. Adicionando os Workers ao Cluster
 
 No nó **master**, gere o comando de `join` para os workers:
+
 ```bash
 kubeadm token create --print-join-command
 ```
@@ -56,6 +60,7 @@ Execute o comando gerado **em cada worker** para adicioná-los ao cluster.
 ## 7. Verificando se o Cluster Está Pronto
 
 No nó master, execute:
+
 ```bash
 kubectl get nodes
 ```

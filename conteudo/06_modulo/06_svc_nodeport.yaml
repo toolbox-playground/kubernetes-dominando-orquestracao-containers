@@ -6,9 +6,8 @@ spec:
   selector:
     app: meu-app
   ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 9376
-    nodePort: 30080
+    - protocol: TCP
+      port: 80
+      targetPort: 9376
+      nodePort: 30080
   type: NodePort
-

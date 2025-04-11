@@ -1,3 +1,4 @@
+```yaml
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -14,8 +15,10 @@ spec:
     resource:
       name: cpu
       targetAverageUtilization: 80
+```
 
-Explicação:
-	•	minReplicas: Número mínimo de réplicas para garantir a disponibilidade mínima.
-	•	maxReplicas: Número máximo de réplicas para evitar sobrecarga de recursos.
-	•	targetAverageUtilization: A média de uso de CPU para determinar quando escalar.
+## Explicação
+
+ • minReplicas: Número mínimo de réplicas para garantir a disponibilidade mínima.
+ • maxReplicas: Número máximo de réplicas para evitar sobrecarga de recursos.
+ • targetAverageUtilization: A média de uso de CPU para determinar quando escalar.
